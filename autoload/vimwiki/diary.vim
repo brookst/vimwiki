@@ -96,7 +96,7 @@ fun! s:read_captions(files) "{{{
 endfun "}}}
 
 fun! s:get_diary_links(...) "{{{
-  let rx = '^\d\{4}-\d\d-\d\d'
+  let rx = '^\d\{4}-\d\d'
   let s_files = glob(VimwikiGet('path').VimwikiGet('diary_rel_path').'*'.VimwikiGet('ext'))
   let files = split(s_files, '\n')
   call filter(files, 'fnamemodify(v:val, ":t") =~ "'.escape(rx, '\').'"')
@@ -144,8 +144,6 @@ endfun "}}}
 fun! s:format_diary(...) "{{{
   let result = []
 
-  call add(result, substitute(g:vimwiki_rxH1_Template, '__Header__', VimwikiGet('diary_header'), ''))
-
   if a:0
     let g_files = s:group_links(s:get_diary_links(a:1))
   else
@@ -155,55 +153,32 @@ fun! s:format_diary(...) "{{{
   " for year in s:rev(sort(keys(g_files)))
   for year in s:sort(keys(g_files))
     call add(result, '')
-    call add(result, substitute(g:vimwiki_rxH2_Template, '__Header__', year , ''))
+    call add(result, substitute(g:vimwiki_rxH1_Template, '__Header__', year , ''))
 
     " for month in s:rev(sort(keys(g_files[year])))
     for month in s:sort(keys(g_files[year]))
       call add(result, '')
-      call add(result, substitute(g:vimwiki_rxH3_Template, '__Header__', s:get_month_name(month), ''))
+      call add(result, substitute(g:vimwiki_rxH2_Template, '__Header__', s:get_month_name(month), ''))
 
       " for [fl, cap] in s:rev(sort(items(g_files[year][month])))
       for [fl, cap] in s:sort(items(g_files[year][month]))
-        if empty(cap)
-          let entry = substitute(g:vimwiki_WikiLinkTemplate1, '__LinkUrl__', fl, '')
-          let entry = substitute(entry, '__LinkDescription__', cap, '')
-          call add(result, repeat(' ', &sw).'* '.entry)
-        else
-          let entry = substitute(g:vimwiki_WikiLinkTemplate2, '__LinkUrl__', fl, '')
-          let entry = substitute(entry, '__LinkDescription__', cap, '')
-          call add(result, repeat(' ', &sw).'* '.entry)
-        endif
+        let entry = substitute(g:vimwiki_WikiLinkTemplate1, '__LinkUrl__', fl, '')
+        call add(result, repeat(' ', &sw).'* '.entry)
       endfor
 
     endfor
   endfor
   call add(result, '')
 
-  return result
+  return result[1:]
 endfun "}}}
 
 function! s:delete_diary_section() "{{{
   " remove diary section
   let old_pos = getpos('.')
-  let ln_start = -1
-  let ln_end = -1
-  call cursor(1, 1)
-  if search(substitute(g:vimwiki_rxH1_Template, '__Header__', VimwikiGet('diary_header'), ''), 'Wc')
-    let ln_start = line('.')
-    if search(g:vimwiki_rxH1, 'W')
-      let ln_end = line('.') - 1
-    else
-      let ln_end = line('$')
-    endif
-  endif
-
-  if ln_start < 0 || ln_end < 0
-    call setpos('.', old_pos)
-    return
-  endif
 
   if !&readonly
-    exe ln_start.",".ln_end."delete _"
+    exe "0,$delete _"
   endif
 
   call setpos('.', old_pos)
